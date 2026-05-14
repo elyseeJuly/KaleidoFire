@@ -27,13 +27,20 @@ export function FireworkCanvas({
     launch(e.clientX, e.clientY, currentType);
   }, [launch, currentType]);
 
-  // Celebration Mode (Auto launch with true randomness)
+  // Celebration Mode (Simultaneous multi-launch for better atmosphere)
   useEffect(() => {
     if (isAutoLaunch) {
       autoLaunchTimerRef.current = setInterval(() => {
-        // 在盛典模式下，随机选取一种精美样态（排除哑弹）
-        const randomType = VALID_TYPES[Math.floor(Math.random() * VALID_TYPES.length)];
-        autoLaunch(randomType);
+        // 每轮随机燃放 2-3 朵烟花，营造盛典齐放的效果
+        const batchSize = Math.floor(Math.random() * 2) + 2; 
+        
+        for (let i = 0; i < batchSize; i++) {
+          // 在极短的随机延迟内发射，增加动态层次感
+          setTimeout(() => {
+            const randomType = VALID_TYPES[Math.floor(Math.random() * VALID_TYPES.length)];
+            autoLaunch(randomType);
+          }, i * 150); // 每朵之间间隔 150ms，避免完全重合
+        }
       }, autoLaunchInterval);
     } else {
       if (autoLaunchTimerRef.current) {
