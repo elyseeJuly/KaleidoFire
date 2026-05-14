@@ -1,5 +1,4 @@
 import type { FireworkType } from '@/types/firework';
-import type { GameMode, MusicEngineState } from '@/music';
 import { 
   Circle, 
   Orbit, 
@@ -12,9 +11,6 @@ import {
   Atom,
   Flower2,
   X,
-  Music,
-  Zap,
-  Wind as WindIcon,
 } from 'lucide-react';
 
 interface ControlPanelProps {
@@ -24,26 +20,27 @@ interface ControlPanelProps {
   onAutoLaunchChange: (value: boolean) => void;
   autoLaunchInterval: number;
   onIntervalChange: (value: number) => void;
-  musicEnabled: boolean;
-  onMusicEnabledChange: (value: boolean) => void;
-  gameMode: GameMode;
-  onGameModeChange: (mode: GameMode) => void;
-  musicState?: MusicEngineState;
 }
 
 const fireworkTypes: { type: FireworkType; name: string; icon: React.ElementType }[] = [
-  { type: 'chrysanthemum', name: '菊花', icon: Circle },
   { type: 'peony', name: '牡丹', icon: Flower2 },
+  { type: 'chrysanthemum', name: '菊花', icon: Circle },
+  { type: 'dahlia', name: '大丽花', icon: Flower2 },
   { type: 'willow', name: '垂柳', icon: Waves },
+  { type: 'brocade', name: '锦冠', icon: Star },
+  { type: 'palm', name: '棕榈', icon: Wind },
   { type: 'saturn', name: '土星', icon: Orbit },
+  { type: 'spiral', name: '螺旋', icon: Wind },
   { type: 'heart', name: '爱心', icon: Heart },
-  { type: 'vortex', name: '漩涡', icon: Wind },
-  { type: 'smiley', name: '笑脸', icon: Smile },
   { type: 'starburst', name: '星爆', icon: Star },
-  { type: 'beehive', name: '蜂巢', icon: Hexagon },
-  { type: 'cascade', name: '瀑布', icon: Waves },
-  { type: 'atomic', name: '原子', icon: Atom },
-  { type: 'crossette', name: '十字', icon: X },
+  { type: 'spider', name: '蜘蛛', icon: X },
+  { type: 'crossette', name: '爆裂', icon: X },
+  { type: 'honeycomb', name: '蜂巢', icon: Hexagon },
+  { type: 'pearl', name: '珍珠', icon: Circle },
+  { type: 'atom', name: '原子', icon: Atom },
+  { type: 'concentric', name: '同心', icon: Orbit },
+  { type: 'rose', name: '玫瑰', icon: Flower2 },
+  { type: 'dud', name: '哑弹', icon: Smile },
 ];
 
 export function ControlPanel({
@@ -53,117 +50,49 @@ export function ControlPanel({
   onAutoLaunchChange,
   autoLaunchInterval,
   onIntervalChange,
-  musicEnabled,
-  onMusicEnabledChange,
-  gameMode,
-  onGameModeChange,
-  musicState,
 }: ControlPanelProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
       <div className="glass-panel rounded-2xl mx-auto max-w-5xl p-4">
-        {/* Top Row: Music Controls & Mode Selection */}
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        {/* Top Row: Celebration Mode Toggle */}
+        <div className="flex items-center justify-center mb-4 gap-6 flex-wrap">
           <div className="flex items-center gap-4">
-            {/* Music Toggle */}
-            <button
-              onClick={() => onMusicEnabledChange(!musicEnabled)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
-                musicEnabled 
-                  ? 'bg-yellow-400/20 border border-yellow-400/50' 
-                  : 'bg-white/5 border border-transparent'
-              }`}
-            >
-              <Music className={`w-4 h-4 ${musicEnabled ? 'text-yellow-400' : 'text-yellow-400/50'}`} />
-              <span className={`text-sm ${musicEnabled ? 'text-yellow-400' : 'text-yellow-400/50'}`}>
-                {musicEnabled ? '音乐开启' : '音乐关闭'}
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <span className={`text-xs transition-colors ${isAutoLaunch ? 'text-yellow-400' : 'text-yellow-400/50'}`}>
+                盛典模式
               </span>
-            </button>
-
-            {/* Game Mode Selection (only when music enabled) */}
-            {musicEnabled && (
-              <div className="flex items-center gap-1 bg-white/5 rounded-full p-1">
-                <button
-                  onClick={() => onGameModeChange('festival')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all ${
-                    gameMode === 'festival'
-                      ? 'bg-yellow-400/20 text-yellow-400'
-                      : 'text-yellow-400/50 hover:text-yellow-400/70'
+              <button
+                onClick={() => onAutoLaunchChange(!isAutoLaunch)}
+                className={`relative w-11 h-6 rounded-full transition-all duration-300 ${
+                  isAutoLaunch ? 'bg-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.4)]' : 'bg-white/10'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 ${
+                    isAutoLaunch ? 'translate-x-6' : 'translate-x-1'
                   }`}
-                >
-                  <Zap className="w-3 h-3" />
-                  盛典
-                </button>
-                <button
-                  onClick={() => onGameModeChange('flow')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all ${
-                    gameMode === 'flow'
-                      ? 'bg-yellow-400/20 text-yellow-400'
-                      : 'text-yellow-400/50 hover:text-yellow-400/70'
-                  }`}
-                >
-                  <WindIcon className="w-3 h-3" />
-                  模拟
-                </button>
+                />
+              </button>
+            </label>
+            
+            {isAutoLaunch && (
+              <div className="flex items-center gap-3 bg-white/5 px-4 py-1.5 rounded-full border border-yellow-400/20">
+                <span className="text-yellow-400/60 text-[10px] uppercase tracking-wider">频率</span>
+                <input
+                  type="range"
+                  min="400"
+                  max="2500"
+                  step="100"
+                  value={autoLaunchInterval}
+                  onChange={(e) => onIntervalChange(Number(e.target.value))}
+                  className="w-24 h-1 bg-yellow-400/20 rounded-lg appearance-none cursor-pointer accent-yellow-400"
+                />
+                <span className="text-yellow-400/80 text-xs font-mono w-8">
+                  {(autoLaunchInterval / 1000).toFixed(1)}s
+                </span>
               </div>
             )}
           </div>
-          
-          {/* Music State Info */}
-          {musicEnabled && musicState && (
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-yellow-400/60">
-                BPM: {musicState.bpm}
-              </span>
-              <span className="text-yellow-400/60">
-                小节: {musicState.currentMeasure + 1}
-              </span>
-              {musicState.comboCount > 0 && (
-                <span className="text-yellow-400 font-bold animate-pulse">
-                  连击: {musicState.comboCount}
-                </span>
-              )}
-            </div>
-          )}
-          
-          {/* Auto Launch Toggle (only when music disabled) */}
-          {!musicEnabled && (
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <span className="text-yellow-400/80 text-xs">自动燃放</span>
-                <button
-                  onClick={() => onAutoLaunchChange(!isAutoLaunch)}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${
-                    isAutoLaunch ? 'bg-yellow-400' : 'bg-gray-600'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                      isAutoLaunch ? 'translate-x-5' : 'translate-x-0.5'
-                    }`}
-                  />
-                </button>
-              </label>
-              
-              {isAutoLaunch && (
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-400/80 text-xs">间隔</span>
-                  <input
-                    type="range"
-                    min="500"
-                    max="3000"
-                    step="100"
-                    value={autoLaunchInterval}
-                    onChange={(e) => onIntervalChange(Number(e.target.value))}
-                    className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-yellow-400"
-                  />
-                  <span className="text-yellow-400/80 text-xs w-10">
-                    {(autoLaunchInterval / 1000).toFixed(1)}s
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Firework Type Buttons */}
@@ -200,10 +129,7 @@ export function ControlPanel({
         {/* Instructions */}
         <div className="mt-3 pt-3 border-t border-yellow-400/20">
           <p className="text-yellow-400/50 text-xs text-center">
-            {musicEnabled 
-              ? '点击屏幕与音乐互动 · 盛典模式节奏明快 · 模拟模式自由随性'
-              : '点击屏幕任意位置发射烟花 | 选择底座后点击发射不同形态'
-            }
+            点击屏幕任意位置发射烟花 | 选择底座后点击发射不同形态
           </p>
         </div>
       </div>

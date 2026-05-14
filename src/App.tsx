@@ -14,25 +14,9 @@ function App() {
   const [isAutoLaunch, setIsAutoLaunch] = useState(false);
   const [autoLaunchInterval, setAutoLaunchInterval] = useState(1500);
   
-  // 音乐设置
-  const [musicEnabled, setMusicEnabled] = useState(false);
-  const [gameMode, setGameMode] = useState<GameMode>('festival');
-  const [musicState, setMusicState] = useState<MusicEngineState | undefined>();
-  
   // UI 状态
   const [showTitle, setShowTitle] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
-
-  const musicEngineRef = useState(() => getGlobalMusicEngine())[0];
-
-  // 监听音乐状态变化
-  useEffect(() => {
-    const unsubscribe = musicEngineRef.onStateChange((state) => {
-      setMusicState(state);
-    });
-
-    return () => unsubscribe();
-  }, [musicEngineRef]);
 
   const handleInteraction = useCallback(() => {
     if (!hasInteracted) {
@@ -40,39 +24,6 @@ function App() {
       setShowTitle(false);
     }
   }, [hasInteracted]);
-
-  // 呼吸圆环交互处理
-  const handleBreathTap = useCallback((x: number, y: number) => {
-    handleInteraction();
-    if (musicEnabled) {
-      musicEngineRef.handleInteraction({
-        type: 'tap',
-        x,
-        y,
-      });
-    }
-  }, [handleInteraction, musicEnabled, musicEngineRef]);
-
-  const handleBreathHoldStart = useCallback((x: number, y: number) => {
-    handleInteraction();
-    if (musicEnabled) {
-      musicEngineRef.handleInteraction({
-        type: 'hold',
-        x,
-        y,
-      });
-    }
-  }, [handleInteraction, musicEnabled, musicEngineRef]);
-
-  const handleBreathHoldEnd = useCallback((x: number, y: number) => {
-    if (musicEnabled) {
-      musicEngineRef.handleInteraction({
-        type: 'holdRelease',
-        x,
-        y,
-      });
-    }
-  }, [musicEnabled, musicEngineRef]);
 
   // 隐藏标题
   useEffect(() => {
@@ -100,20 +51,7 @@ function App() {
         currentType={currentType}
         isAutoLaunch={isAutoLaunch}
         autoLaunchInterval={autoLaunchInterval}
-        musicEnabled={musicEnabled}
-        gameMode={gameMode}
       />
-
-      {/* Breath Ring (only when music enabled) */}
-      {musicEnabled && (
-        <BreathRing
-          musicEnabled={musicEnabled}
-          bpm={musicState?.bpm}
-          onTap={handleBreathTap}
-          onHoldStart={handleBreathHoldStart}
-          onHoldEnd={handleBreathHoldEnd}
-        />
-      )}
 
       {/* Title Overlay */}
       <Title visible={showTitle} />
@@ -126,11 +64,6 @@ function App() {
         onAutoLaunchChange={setIsAutoLaunch}
         autoLaunchInterval={autoLaunchInterval}
         onIntervalChange={setAutoLaunchInterval}
-        musicEnabled={musicEnabled}
-        onMusicEnabledChange={setMusicEnabled}
-        gameMode={gameMode}
-        onGameModeChange={setGameMode}
-        musicState={musicState}
       />
 
       {/* Corner Decorations */}
@@ -140,20 +73,6 @@ function App() {
       <div className="fixed top-4 right-4 z-40 pointer-events-none">
         <div className="w-16 h-16 border-r-2 border-t-2 border-yellow-400/30 rounded-tr-lg" />
       </div>
-
-      {/* Music Mode Indicator */}
-      {musicEnabled && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
-          <div className="glass-panel px-4 py-2 rounded-full flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full animate-pulse ${
-              gameMode === 'festival' ? 'bg-orange-400' : 'bg-cyan-400'
-            }`} />
-            <span className="text-xs text-yellow-400/80">
-              {gameMode === 'festival' ? '盛典模式' : '模拟模式'}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

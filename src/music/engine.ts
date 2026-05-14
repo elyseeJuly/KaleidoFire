@@ -325,7 +325,7 @@ export class MusicEngine {
       if (this.config.syncFireworks) {
         const fireworkEvent: FireworkSyncEvent = {
           type: 'launch',
-          fireworkType: isLarge ? 'atomic' : 'peony',
+          fireworkType: isLarge ? 'atom' : 'peony',
           x: event.x / window.innerWidth,
           y: event.y / window.innerHeight,
           note,
@@ -375,7 +375,7 @@ export class MusicEngine {
       setTimeout(() => {
         const fireworkEvent: FireworkSyncEvent = {
           type: 'launch',
-          fireworkType: i % 2 === 0 ? 'atomic' : 'chrysanthemum',
+          fireworkType: i % 2 === 0 ? 'atom' : 'chrysanthemum',
           x: 0.1 + (i / 10) * 0.8,
           y: 0.1 + Math.random() * 0.3,
           note: PENTATONIC_SCALE[i % 5],
