@@ -102,7 +102,7 @@ export class MusicEngine {
   private playMeasureMelody(_measureIndex: number): void {
     const phrase = this.melodyGenerator.generatePhrase();
     
-    phrase.events.forEach((event, index) => {
+    phrase.events.forEach((event, _index) => {
       setTimeout(() => {
         // 触发烟花同步
         if (this.config.syncFireworks) {

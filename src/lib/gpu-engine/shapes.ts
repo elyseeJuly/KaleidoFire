@@ -64,8 +64,6 @@ function rndSphere(r = 1): [number, number, number] {
   ];
 }
 
-function rng(lo: number, hi: number) { return lo + Math.random() * (hi - lo); }
-
 // ─── Shape Generators (calibrated to Qianshu v6 BURST_RADIUS = 36) ──────────
 
 export function shapePeony(count: number, R = 36): Float32Array {
@@ -203,7 +201,6 @@ function inHeart(x: number, y: number) {
 
 export function shapeHeart(count: number, R = 36): Float32Array {
   const a = new Float32Array(count * 3);
-  const scale = R / 17.0;
   let filled = 0, attempts = 0;
   while (filled < count && attempts < count * 20) {
     attempts++;

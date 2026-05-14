@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FireworkCanvas } from '@/components/FireworkCanvas';
 import { ControlPanel } from '@/components/ControlPanel';
-import { BreathRing } from '@/components/BreathRing';
 import { Title } from '@/components/Title';
 import type { FireworkType } from '@/types/firework';
-import type { GameMode, MusicEngineState } from '@/music';
-import { getGlobalMusicEngine } from '@/music';
 import './App.css';
 
 function App() {
