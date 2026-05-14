@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/VERSION-V1.1.0--STABLE-BD2C00?style=for-the-badge&labelColor=444)](https://github.com/elyseeJuly/KaleidoFire)
+[![Version](https://img.shields.io/badge/VERSION-V1.1.0--STABLE-BD2C00?style=for-the-badge&labelColor=444)](https://elyseejuly.github.io/KaleidoFire/)
 [![License](https://img.shields.io/badge/LICENSE-MIT-lightgrey?style=for-the-badge&labelColor=444)](./LICENSE)
 [![Framework](https://img.shields.io/badge/MADE%20WITH-REACT-61DAFB?style=for-the-badge&labelColor=444&logo=react&logoColor=black)](https://react.dev)
 
