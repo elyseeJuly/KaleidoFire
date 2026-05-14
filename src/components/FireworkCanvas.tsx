@@ -8,6 +8,13 @@ interface FireworkCanvasProps {
   autoLaunchInterval: number;
 }
 
+const VALID_TYPES: FireworkType[] = [
+  'chrysanthemum', 'willow', 'saturn', 'heart', 'spiral', 
+  'starburst', 'honeycomb', 'atom', 'peony', 'crossette',
+  'dahlia', 'brocade', 'palm', 'spider', 'pearl', 
+  'concentric', 'rose'
+];
+
 export function FireworkCanvas({ 
   currentType, 
   isAutoLaunch, 
@@ -20,11 +27,13 @@ export function FireworkCanvas({
     launch(e.clientX, e.clientY, currentType);
   }, [launch, currentType]);
 
-  // Celebration Mode (Auto launch)
+  // Celebration Mode (Auto launch with true randomness)
   useEffect(() => {
     if (isAutoLaunch) {
       autoLaunchTimerRef.current = setInterval(() => {
-        autoLaunch(currentType);
+        // 在盛典模式下，随机选取一种精美样态（排除哑弹）
+        const randomType = VALID_TYPES[Math.floor(Math.random() * VALID_TYPES.length)];
+        autoLaunch(randomType);
       }, autoLaunchInterval);
     } else {
       if (autoLaunchTimerRef.current) {
@@ -38,7 +47,7 @@ export function FireworkCanvas({
         clearInterval(autoLaunchTimerRef.current);
       }
     };
-  }, [isAutoLaunch, autoLaunchInterval, autoLaunch, currentType]);
+  }, [isAutoLaunch, autoLaunchInterval, autoLaunch]);
 
   return (
     <div
