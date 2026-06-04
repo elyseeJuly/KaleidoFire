@@ -1,6 +1,6 @@
 # 万华烟花 (KaleidoFire) — 开发文档主注册表目录 (Document Index)
 > **项目版本**: V1.1.0-STABLE  
-> **生效日期**: 2026-05-21 (最后更新于 2026-05-28)  
+> **生效日期**: 2026-05-21 (最后更新于 2026-06-04)  
 > **管理规范**: SPEC_20260520_GLOBAL_DEVELOPMENT_STANDARDS.md  
 
 ---
@@ -40,6 +40,7 @@
 | 17 | `EXEC_20260511_FIREWORK_ENGINE_REBUILD_PLAN.md` | `EXEC_` | 2026-05-11 | **烟花引擎审计与重构会话实施方案**。详细规划了 P0-P3 BUG 修复与对标 Qianshu-Rhythm 的物理与后处理管线升级设计。 | [查看文档](file:///Users/quantumrose/Documents/Emberois/KaleidoFire/docs/EXEC_20260511_FIREWORK_ENGINE_REBUILD_PLAN.md) |
 | 18 | `EXEC_20260511_FIREWORK_ENGINE_REBUILD_TASK.md` | `EXEC_` | 2026-05-11 | **烟花引擎审计与重构会话进度清单**。伴随着整个重构和极简化清理会话的详细原子化 TODO task 进度跟踪，状态均 100% 交付通过。 | [查看文档](file:///Users/quantumrose/Documents/Emberois/KaleidoFire/docs/EXEC_20260511_FIREWORK_ENGINE_REBUILD_TASK.md) |
 | 19 | `EXEC_20260511_FIREWORK_ENGINE_REBUILD_WALKTHROUGH.md` | `EXEC_` | 2026-05-11 | **烟花引擎审计与重构交付验证汇报**。包含物理顶点/片元着色器重构、古筝防止自激环路、Shadcn 清理与 Tone.js 卸载包体大小优化等 100% 亮绿灯的交付报告。 | [查看文档](file:///Users/quantumrose/Documents/Emberois/KaleidoFire/docs/EXEC_20260511_FIREWORK_ENGINE_REBUILD_WALKTHROUGH.md) |
+| 20 | `AUDIT_20260604_FIREWORK_PHYSICS_AND_SHADERS_GAP.md` | `AUDIT_` | 2026-06-04 | **烟火物理与渲染管线差距审计报告**。深度对比 Qianshu v6.0 的速度积分、动态切线拖尾、燃烧材料与二阶段母星空中裂变机制，指出 KaleidoFire 当前的 3 项 BUG 与 4 项物理渲染差距。 | [查看文档](file:///Users/quantumrose/Documents/Emberois/KaleidoFire/docs/AUDIT_20260604_FIREWORK_PHYSICS_AND_SHADERS_GAP.md) |
 
 ---
 

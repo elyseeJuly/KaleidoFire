@@ -418,7 +418,7 @@ export const SHAPE_GEN: Record<string, (c: number, R?: number) => Float32Array> 
   dud:           shapeDud,
 };
 
-export function generateShape(type: string, count: number, origin = [0, 0, 0], R = 5.2): Float32Array {
+export function generateShape(type: string, count: number, origin = [0, 0, 0], R = 36): Float32Array {
   const gen = SHAPE_GEN[type] || shapePeony;
   const arr = gen(count, R);
   for (let i = 0; i < count; i++) {

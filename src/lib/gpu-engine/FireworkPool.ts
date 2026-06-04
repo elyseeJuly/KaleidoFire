@@ -12,12 +12,15 @@ attribute vec3  aMorphTarget; // phase-2 morph destination
 attribute vec4  aTiming;      // x=birthSec, y=lifespan, z=morphFraction, w=rndSeed
 attribute vec4  aColor;       // primary rgb (colour ramp driven by shader)
 attribute vec4  aStyle;       // x=point, y=gravity, z=coast, w=tail
+attribute vec3  aVelocity;    // initial velocity vector (GAP-1)
+attribute vec4  aMaterial;    // x=burnRate, y=sparkle, z=crackle, w=smokeYield (GAP-3)
 
 uniform float uTime;
 
 varying vec3  vColor;
 varying float vAlpha;
 varying float vTail;
+varying vec3  vDir;           // velocity direction for tail alignment (GAP-2)
 
 void main() {
     float launchDuration = 0.85; // 快速升空持续时间
@@ -46,7 +49,7 @@ void main() {
         vColor = vec3(1.0, 0.92, 0.75); 
         vAlpha = smoothstep(0.0, 0.2, t) * 0.9;
         vTail  = 0.8;
-        gl_PointSize = mix(2.5, 6.0, aTiming.w) * (280.0 / max(-pos.z, 2.0));
+        vDir   = vec3(0.0, 1.0, 0.0); // 升空方向向上
     } else {
         // 🎆 燃放阶段
         nLife = clamp(life / lifespan, 0.0, 1.0);
@@ -69,27 +72,38 @@ void main() {
 
         float coastScale = max(aStyle.z, 0.25);
         float k_drag     = mix(6.32, 1.83, smoothstep(0.0, 0.5, nLife)) / coastScale;
-        float v0_drift   = 0.80 + aTiming.w * 0.40;
-        float drift      = v0_drift * (1.0 - exp(-k_drag * life)) / k_drag;
-        float maxDrift   = v0_drift / 6.32;
-        float extraR     = R * 0.10 * coastScale * clamp(drift / max(maxDrift, 0.001), 0.0, 1.0);
+        
+        // Use aVelocity for trajectory integration (GAP-1)
+        float drift      = (1.0 - exp(-k_drag * life)) / k_drag;
+        pos = origin + aVelocity * drift * burst;
 
-        pos = origin + dir * (R + extraR) * burst;
-
+        // Gravity
         float realT    = nLife * lifespan;
         float gravDrop = (0.03 * realT * realT +
                           (0.08 / (3.0 * lifespan)) * realT * realT * realT) * 22.0;
         pos.y -= gravDrop * aStyle.y * burst;
 
+        // Wind & Turbulence
         float wx = sin(aTiming.w * 6.283 + life * 0.9) * 0.12 * nLife * nLife;
         float wz = cos(aTiming.w * 3.141 + life * 0.6) * 0.09 * nLife * nLife;
         pos.x += wx;
         pos.z += wz;
 
-        float decayT = max(0.0, (nLife - bFrac) / max(1.0 - bFrac, 0.001));
+        // Material-based decay (GAP-3)
+        float burnRate = aMaterial.x;
+        float decayT = max(0.0, (nLife - bFrac) / max(1.0 - bFrac, 0.001)) * burnRate;
         float fadeIn = smoothstep(0.0, bFrac * 0.6, nLife);
-        float alphaD = pow(max(0.0, 1.0 - decayT), 2.2);
-        vAlpha       = alphaD * fadeIn * (0.72 + aTiming.w * 0.28);
+        float alphaD = pow(max(0.0, 1.0 - clamp(decayT, 0.0, 1.0)), 2.2);
+
+        // Material Sparkle Flicker
+        float sparkle = aMaterial.y;
+        float flicker = 1.0;
+        if (sparkle > 0.1) {
+            flicker = 0.6 + 0.4 * sin(life * 30.0 + aTiming.w * 100.0);
+            flicker *= step(0.2, fract(life * 15.0 + aTiming.w)); // chop it up
+        }
+
+        vAlpha       = alphaD * fadeIn * (0.72 + aTiming.w * 0.28) * mix(1.0, flicker, sparkle);
 
         vec3 white     = vec3(1.0, 0.98, 0.96);
         vec3 primary   = aColor.rgb;
@@ -101,6 +115,9 @@ void main() {
         col      = mix(col,     dark,      smoothstep(0.88, 1.00, nLife));
         vColor   = col;
         vTail    = aStyle.w * smoothstep(0.06, 0.34, nLife);
+        
+        // Calculate velocity direction for trailing (GAP-2)
+        vDir     = length(aVelocity) > 0.001 ? normalize(aVelocity) : vec3(0.0, 1.0, 0.0);
     }
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
@@ -122,10 +139,18 @@ precision mediump float;
 varying vec3  vColor;
 varying float vAlpha;
 varying float vTail;
+varying vec3  vDir;           // velocity direction for tail alignment (GAP-2)
+
 void main() {
     vec2  c    = gl_PointCoord - 0.5;
     float tail = clamp(vTail, 0.0, 1.0);
-    vec2  oval = vec2(c.x, c.y * mix(1.0, 0.24, tail));
+    
+    // Screen-space alignment of the tail along the vDir vector (GAP-2)
+    vec2 axis = normalize(vDir.xy + vec2(0.0001));
+    vec2 perp = vec2(-axis.y, axis.x);
+    vec2 local = vec2(dot(c, perp), dot(c, axis));
+    vec2 oval = vec2(local.x, local.y * mix(1.0, 0.24, tail));
+    
     float d = length(oval);
     if (d > 0.5) discard;
     
@@ -155,6 +180,9 @@ export interface FireEventConfig {
   x: number;      // NDC X (-1 to 1)
   y: number;      // NDC Y (-1 to 1)
   palette?: string;
+  radiusScale?: number;
+  countScale?: number;
+  allowEvolution?: boolean;
   morphConfig?: {
     shapeType: string;
     morphFraction?: number;
@@ -188,6 +216,8 @@ export class FireworkPool {
     geo.setAttribute('aTiming', mk(maxPtcl, 4));
     geo.setAttribute('aColor', mk(maxPtcl, 4));
     geo.setAttribute('aStyle', mk(maxPtcl, 4));
+    geo.setAttribute('aVelocity', mk(maxPtcl, 3));
+    geo.setAttribute('aMaterial', mk(maxPtcl, 4));
 
     const posArr = geo.attributes.position.array;
     for (let i = 0; i < maxPtcl; i++) {
@@ -219,7 +249,9 @@ export class FireworkPool {
 
   // ── Extendable interface ──────────────────────────────────────────────────
   fire(config: FireEventConfig, timeSec: number, camera: THREE.Camera) {
-    const count = config.count || shapeCount(config.type);
+    const radiusScale = config.radiusScale ?? 1.0;
+    const countScale = config.countScale ?? 1.0;
+    const count = config.count || Math.floor(shapeCount(config.type) * countScale);
     const style = shapeStyle(config.type);
     const slot = this._getSlot(count);
     if (!slot) return;
@@ -227,21 +259,24 @@ export class FireworkPool {
     const origin = this._ndcToWorld([config.x, config.y], camera);
     const ox = origin.x, oy = origin.y, oz = origin.z;
 
-    const targets = generateShape(config.type, count, [ox, oy, oz]);
+    const R = 5.2 * radiusScale;
+    const targets = generateShape(config.type, count, [ox, oy, oz], R);
 
     let morphTargets = null;
     let morphFrac = 0;
     if (config.morphConfig) {
-      morphTargets = generateShape(config.morphConfig.shapeType, count, [ox, oy, oz]);
+      morphTargets = generateShape(config.morphConfig.shapeType, count, [ox, oy, oz], R);
       morphFrac = config.morphConfig.morphFraction ?? 0.5;
     }
 
-    const aOrigin = slot.geo.attributes.aOrigin.array;
-    const aTarget = slot.geo.attributes.aTarget.array;
-    const aMorphTarget = slot.geo.attributes.aMorphTarget.array;
-    const aTiming = slot.geo.attributes.aTiming.array;
-    const aColor = slot.geo.attributes.aColor.array;
-    const aStyle = slot.geo.attributes.aStyle.array;
+    const aOrigin = slot.geo.attributes.aOrigin.array as Float32Array;
+    const aTarget = slot.geo.attributes.aTarget.array as Float32Array;
+    const aMorphTarget = slot.geo.attributes.aMorphTarget.array as Float32Array;
+    const aTiming = slot.geo.attributes.aTiming.array as Float32Array;
+    const aColor = slot.geo.attributes.aColor.array as Float32Array;
+    const aStyle = slot.geo.attributes.aStyle.array as Float32Array;
+    const aVelocity = slot.geo.attributes.aVelocity.array as Float32Array;
+    const aMaterial = slot.geo.attributes.aMaterial.array as Float32Array;
 
     const lifespan = (DEFAULT_LIFESPAN + (Math.random() - 0.5) * 0.4) * style.life;
     const paletteKey = config.palette || getRandomPaletteName();
@@ -270,6 +305,37 @@ export class FireworkPool {
         aMorphTarget[i3 + 2] = aTarget[i3 + 2];
       }
 
+      // Calculate initial velocity (GAP-1)
+      const dx = aTarget[i3] - ox;
+      const dy = aTarget[i3 + 1] - oy;
+      const dz = aTarget[i3 + 2] - oz;
+      const len = Math.hypot(dx, dy, dz) || 0.001;
+      const speed = R * (1.8 + Math.random() * 0.7); // 1.8x - 2.5x of R
+      aVelocity[i3] = (dx / len) * speed;
+      aVelocity[i3 + 1] = (dy / len) * speed;
+      aVelocity[i3 + 2] = (dz / len) * speed;
+
+      // Material Settings (GAP-3)
+      let burnRate = 1.0, sparkle = 0.0, crackle = 0.0, smokeYield = 0.5;
+      if (config.type === 'willow' || config.type === 'brocade') {
+        burnRate = 0.7;
+        smokeYield = 0.8;
+      } else if (config.type === 'crossette_child') {
+        burnRate = 1.5;
+        crackle = 1.0;
+        sparkle = 0.5;
+      } else if (config.type === 'saturn' || config.type === 'pearl' || config.type === 'rose') {
+        sparkle = 1.0;
+      } else if (config.type === 'dud') {
+        burnRate = 1.8;
+        smokeYield = 0.2;
+      }
+
+      aMaterial[i4] = burnRate;
+      aMaterial[i4 + 1] = sparkle;
+      aMaterial[i4 + 2] = crackle;
+      aMaterial[i4 + 3] = smokeYield;
+
       aTiming[i4] = timeSec;
       aTiming[i4 + 1] = lifespan + (Math.random() - 0.5) * 0.6;
       aTiming[i4 + 2] = morphFrac;
@@ -288,7 +354,7 @@ export class FireworkPool {
       aStyle[i4 + 3] = style.tail * (0.86 + Math.random() * 0.26);
     }
 
-    for (const key of ['aOrigin', 'aTarget', 'aMorphTarget', 'aTiming', 'aColor', 'aStyle']) {
+    for (const key of ['aOrigin', 'aTarget', 'aMorphTarget', 'aTiming', 'aColor', 'aStyle', 'aVelocity', 'aMaterial']) {
       slot.geo.attributes[key].needsUpdate = true;
     }
     slot.geo.setDrawRange(0, count);

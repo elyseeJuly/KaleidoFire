@@ -16,4 +16,5 @@ export type FireworkType =
   | 'pearl'
   | 'concentric'
   | 'rose'
-  | 'dud';
+  | 'dud'
+  | 'crossette_child';

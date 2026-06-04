@@ -4,9 +4,10 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
-import { playDrum, getAudioContext } from '@/music/instruments';
+import { playDrum, getAudioContext, playLaunchThump } from '@/music/instruments';
 import type { FireworkType } from '@/types/firework';
 import { FireworkPool } from '../lib/gpu-engine/FireworkPool';
+import { generateShape } from '../lib/gpu-engine/shapes';
 
 const STAR_VERT = `
 uniform float uTime;
@@ -50,6 +51,7 @@ export function useFireworkSystem() {
   }, []);
 
   const playLaunchSound = useCallback(() => {
+    playLaunchThump(0.4); // 较小音量发射声
   }, []);
 
   const playExplosionSound = useCallback(() => {
@@ -156,6 +158,70 @@ export function useFireworkSystem() {
       performance.now() / 1000,
       cameraRef.current
     );
+
+    // Crossette 二阶段空中裂变逻辑 (GAP-4)
+    if (type === 'crossette') {
+      const R = 5.2; // 物理基准半径
+      const delayMs = Math.random() * 140 + 280; // 280ms 至 420ms 随机裂变延迟
+      
+      // 在 CPU 侧获取当前的爆炸爆心，并模拟 parent 粒子轨迹
+      const origin = fireworkPoolRef.current._ndcToWorld([ndcX, ndcY], cameraRef.current);
+      const ox = origin.x, oy = origin.y, oz = origin.z;
+      
+      // 预先生成母星形态并采样
+      const sampleCount = Math.floor(Math.random() * 16) + 24; // 24-40 颗母星
+      const targets = generateShape('crossette', 300, [ox, oy, oz], R);
+      
+      const parentStars: { ox: number; oy: number; oz: number; vx: number; vy: number; vz: number }[] = [];
+      for (let i = 0; i < sampleCount; i++) {
+        const idx = Math.floor(Math.random() * 300);
+        const tx = targets[idx * 3];
+        const ty = targets[idx * 3 + 1];
+        const tz = targets[idx * 3 + 2];
+        const dx = tx - ox;
+        const dy = ty - oy;
+        const dz = tz - oz;
+        const len = Math.hypot(dx, dy, dz) || 0.001;
+        const speed = R * (1.8 + Math.random() * 0.7); // 1.8x - 2.5x 初速度
+        parentStars.push({
+          ox, oy, oz,
+          vx: (dx / len) * speed,
+          vy: (dy / len) * speed,
+          vz: (dz / len) * speed
+        });
+      }
+
+      // 调度裂变定时器 (在 launch 后的 850ms 爆炸，加上 delayMs 飞行时间)
+      setTimeout(() => {
+        if (!cameraRef.current || !fireworkPoolRef.current) return;
+        const t = delayMs / 1000.0;
+        const k_drag = 1.83; // crossette 阻力系数
+        const drift = (1.0 - Math.exp(-k_drag * t)) / k_drag;
+        
+        // 物理积分下坠计算
+        const gravitySens = 0.78; // crossette 重力敏感度
+        const gravDrop = (0.03 * t * t + (0.08 / 9.0) * t * t * t) * 22.0 * gravitySens; // Qianshu v6.0 重力积分
+
+        for (const s of parentStars) {
+          const splitX = s.ox + s.vx * drift;
+          const splitY = s.oy + s.vy * drift - gravDrop;
+          const splitZ = s.oz + s.vz * drift;
+          
+          // 投影回 NDC
+          const worldVec = new THREE.Vector3(splitX, splitY, splitZ);
+          worldVec.project(cameraRef.current);
+          
+          // 发射子星 crossette_child (缩放比例为 15% 半径，3% 粒子数)
+          fireworkPoolRef.current.fire({
+            type: 'crossette_child',
+            x: worldVec.x,
+            y: worldVec.y,
+            radiusScale: 0.15,
+            countScale: 0.03
+          }, performance.now() / 1000, cameraRef.current);
+        }
+      }, 850 + delayMs);
+    }
 
     playLaunchSound();
     // 延迟 850ms 播放爆炸声，对齐 Shader 中的 launchDuration

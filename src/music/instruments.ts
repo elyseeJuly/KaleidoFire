@@ -390,6 +390,30 @@ function addHarmonics(
   });
 }
 
+// ==================== 发射筒冲击音（Launch Thump） ====================
+
+export function playLaunchThump(
+  velocity: number = 0.5
+): void {
+  const ctx = getAudioContext();
+  
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(90, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.15);
+  
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(velocity * 0.6, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+  
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  
+  trackNode(osc, 0.15);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.15);
+}
+
 // 播放指定乐器的音符
 export function playNote(
   instrument: InstrumentType,
