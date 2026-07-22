@@ -1,0 +1,36 @@
+name: Temp build meeting record
+
+on:
+  pull_request:
+    branches:
+      - temp-document-20260715
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependency
+        run: python -m pip install python-docx
+      - name: Generate DOCX package
+        run: python temp/generate_meeting_record.py
+      - name: Upload DOCX package
+        uses: actions/upload-artifact@v4
+        with:
+          name: meeting-record-docx
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: true
+          path: |
+            package/[Content_Types].xml
+            package/_rels/**
+            package/docProps/**
+            package/word/**
